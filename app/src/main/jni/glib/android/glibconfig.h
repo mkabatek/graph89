@@ -56,8 +56,8 @@ G_GNUC_EXTENSION typedef unsigned long long guint64;
 #define GLIB_SIZEOF_LONG   4
 #define GLIB_SIZEOF_SIZE_T 4
 
-typedef signed int gssize;
-typedef unsigned int gsize;
+typedef signed long int gssize;
+typedef unsigned long int gsize;
 #define G_GSIZE_MODIFIER ""
 #define G_GSSIZE_FORMAT "i"
 #define G_GSIZE_FORMAT "u"
