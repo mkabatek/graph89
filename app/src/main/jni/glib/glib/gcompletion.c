@@ -48,7 +48,7 @@ g_completion_new (GCompletionFunc func)
   gcomp->cache = NULL;
   gcomp->prefix = NULL;
   gcomp->func = func;
-  gcomp->strncmp_func = strncmp;
+  gcomp->strncmp_func = (GCompletionStrncmpFunc) strncmp;
 
   return gcomp;
 }

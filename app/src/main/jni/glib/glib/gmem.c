@@ -109,12 +109,12 @@ standard_calloc (gsize n_blocks,
 
 /* --- variables --- */
 static GMemVTable glib_mem_vtable = {
-  standard_malloc,
-  standard_realloc,
-  standard_free,
-  standard_calloc,
-  standard_try_malloc,
-  standard_try_realloc,
+        (gpointer (*)(gsize)) standard_malloc,
+        (gpointer (*)(gpointer, gsize)) standard_realloc,
+        standard_free,
+        (gpointer (*)(gsize, gsize)) standard_calloc,
+        (gpointer (*)(gsize)) standard_try_malloc,
+        (gpointer (*)(gpointer, gsize)) standard_try_realloc,
 };
 
 
