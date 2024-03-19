@@ -192,14 +192,16 @@ public class EmulatorActivity extends Graph89ActivityBase
 	}
 
 	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-		if (requestCode == PermissionHelper.MEDIA_PERMISSIONS_REQUEST) {
-			for (int i = 0; i < permissions.length; i++) {
-				if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
-					Toast.makeText(this, "Required storage permission not granted", Toast.LENGTH_LONG).show();
-					finish();
-				}
-			}
-		}
+		// no longer need to request filesystem permissions using API 33. Instead use
+		// an ACTION_OPEN_DOCUMENT intent to select the image
+//		if (requestCode == PermissionHelper.MEDIA_PERMISSIONS_REQUEST) {
+//			for (int i = 0; i < permissions.length; i++) {
+//				if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+//					Toast.makeText(this, "Required storage permission not granted", Toast.LENGTH_LONG).show();
+//					finish();
+//				}
+//			}
+//		}
 	}
 
 	private void unbindDrawables(View view)

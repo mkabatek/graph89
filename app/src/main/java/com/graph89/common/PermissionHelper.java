@@ -24,6 +24,8 @@ public class PermissionHelper {
     }
 
     public static void requestMediaPermissions(Activity context, int requestCode) {
-        ActivityCompat.requestPermissions(context, mediaPermissions, requestCode);
+        // no longer need to request filesystem permissions using API 33. Instead use
+        // an ACTION_OPEN_DOCUMENT intent to select the image
+        //ActivityCompat.requestPermissions(context, mediaPermissions, requestCode);
     }
 }

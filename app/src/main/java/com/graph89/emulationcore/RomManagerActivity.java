@@ -20,17 +20,25 @@
 package com.graph89.emulationcore;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Message;
+import android.provider.DocumentsContract;
+import android.provider.OpenableColumns;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -286,7 +294,15 @@ public class RomManagerActivity extends Graph89ActivityBase
 								}
 								else
 								{
+									// attempt to copy the temporary file
 									error = EmulatorActivity.nativeInstallROM(mBrowseText, newInstance.ImageFilePath, calculatorType, Util.Bool2Int(isRom));
+									// delete the temporary file
+									File tmpFile = new File(mBrowseText);
+									if (!tmpFile.delete()) {
+										Log.d("Graph89", "Could not delete temporary file: " + mBrowseText);
+									} else {
+										Log.d("Graph89", "Temporary file deleted: " + mBrowseText);
+									}
 								}
 
 								if (error != 0 || rom_mismatch!=null)
@@ -422,18 +438,36 @@ public class RomManagerActivity extends Graph89ActivityBase
 
 	private void ChooseRomFile()
 	{
-		Intent myIntent = new Intent(this, FilePickerActivity.class);
-		myIntent.putExtra(FilePickerActivity.EXTRA_FILE_PATH, Environment.getExternalStorageDirectory().getAbsolutePath());
-		ArrayList<String> extensions = new ArrayList<String>();
-		extensions.add(".rom");
-		extensions.add(".8Xu");
-		extensions.add(".89u");
-		extensions.add(".v2u");
-		extensions.add(".9xu");
-		extensions.add(".tib");
-		myIntent.putExtra(FilePickerActivity.EXTRA_ACCEPTED_FILE_EXTENSIONS, extensions);
-		myIntent.putExtra(FilePickerActivity.EXTRA_MULTISELECT, false);
+		// create new file selection intent
+		Intent myIntent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+		myIntent.addCategory(Intent.CATEGORY_OPENABLE);
+		myIntent.setType("*/*");
+		myIntent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Environment.getExternalStorageDirectory().getAbsolutePath());
+		// start the intent
 		startActivityForResult(myIntent, ROM_BROWSE);
+	}
+
+	public String getFileName(Uri uri) {
+		String result = null;
+		if (uri.getScheme().equals("content")) {
+			Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+			try {
+				if (cursor != null && cursor.moveToFirst()) {
+					int colIdx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+					if (colIdx >= 0) result = cursor.getString(colIdx);
+				}
+			} finally {
+				cursor.close();
+			}
+		}
+		if (result == null) {
+			result = uri.getPath();
+			int cut = result.lastIndexOf('/');
+			if (cut != -1) {
+				result = result.substring(cut + 1);
+			}
+		}
+		return result;
 	}
 
 	@Override
@@ -444,15 +478,57 @@ public class RomManagerActivity extends Graph89ActivityBase
 			switch (requestCode)
 			{
 				case ROM_BROWSE:
-					if (data.hasExtra(FilePickerActivity.EXTRA_FILE_PATH))
-					{
-						ArrayList<String> results = data.getStringArrayListExtra(FilePickerActivity.EXTRA_FILE_PATH);
-						if (results != null)
-						{
-							mBrowseText = results.get(0);
+					if (resultCode == Activity.RESULT_OK) {
+						// The document selected by the user will be in "data.getData()". Copy the
+						// selected file to a temporary file in the app-specific directory then set
+						// mBrowseText string to the path/filename of the temporary file. The string
+						// will be used to create an image and state file for the calculator later
+						// on and then deleted after the image is created
 
-							if (mBrowseText != null) mBrowseText = mBrowseText.trim();
+						if (data != null && data.getData() != null) {
+							Log.d("Graph89", "Temporarily copy the selected file to app-specific directory");
+							Log.d("Graph89", "Source: "+data.getData().toString());
+
+							// copy the selected file into internal storage
+							InputStream is = null;
+							OutputStream os = null;
+							try {
+								// get the filename from the input URI
+								String filename = getFileName(data.getData());
+								// and find the output directory/file
+								String pathFilename = getApplicationContext().getFilesDir().toString() + "/" + filename;
+								Log.d("Graph89","Dest: "+pathFilename);
+
+								// open the input & output streams
+								is = getContentResolver().openInputStream(data.getData());
+								os = getApplicationContext().openFileOutput(filename, 0);
+
+								// copy the streams
+								byte[] buffer = new byte[1024];
+								int length;
+								while ((length = is.read(buffer)) > 0) {
+									os.write(buffer, 0, length);
+								}
+
+								// save the location of the internal copy
+								mBrowseText = pathFilename;
+
+							} catch (Exception e) {
+								Log.d("Graph89","Caught exception copying input file to temporary file in app-specific directory: "+e.toString());
+							} finally {
+								try {
+									is.close();
+									os.close();
+								} catch (Exception e) {
+									Log.d("Graph89","Caught exception closing source file or temporary file: "+e.toString());
+                                }
+                            }
+
+						} else {
+							Log.d("Graph89","File URI not found");
 						}
+					} else {
+						Log.d("Graph89", "User cancelled file browsing");
 					}
 					break;
 			}
