@@ -7,6 +7,13 @@ It was forked from the [last version distributed by the original author](https:/
 
 Kudos to him and everyone involved in the TI emulation projects, especially the TiEmu and TilEm developers.
 
+## This Fork
+
+This is a fork from https://github.com/milaq/graph89 to add support for 64-bit android/x86 platforms. 
+The important change for 64-bit support was to patch glib to use 64-bit integers for gsize & gssize. 
+There was a bit of warning clean-up (there are still hundreds of warnings in the arm64-v8a build but the 
+app appears to work). After that the ROM manager was updated to support Android SDK 34 and the scoped storage paradigm.
+
 ## Implementation
 
 Graph89 consists of 4 distinct parts.
