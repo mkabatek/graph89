@@ -53,6 +53,7 @@ import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.Bisha.TI89EmuDonation.R;
 import com.graph89.common.CalculatorInstance;
@@ -489,45 +490,63 @@ public class RomManagerActivity extends Graph89ActivityBase
 							Log.d("Graph89", "Temporarily copy the selected file to app-specific directory");
 							Log.d("Graph89", "Source: "+data.getData().toString());
 
-							// copy the selected file into internal storage
-							InputStream is = null;
-							OutputStream os = null;
-							try {
-								// get the filename from the input URI
-								String filename = getFileName(data.getData());
-								// and find the output directory/file
-								String pathFilename = getApplicationContext().getFilesDir().toString() + "/" + filename;
-								Log.d("Graph89","Dest: "+pathFilename);
+							// get the filename from the input URI
+							String filename = getFileName(data.getData());
+							// and find the output directory/file
+							String pathFilename = getApplicationContext().getFilesDir().toString() + "/" + filename;
+							Log.d("Graph89","Dest: "+pathFilename);
 
-								// open the input & output streams
-								is = getContentResolver().openInputStream(data.getData());
-								os = getApplicationContext().openFileOutput(filename, 0);
+							//check if file extension is correct
+							String[] split = filename.split("\\.");
+							String ext = split[split.length-1];
+							if (ext.equalsIgnoreCase("rom") ||
+								ext.equalsIgnoreCase("8Xu") ||
+								ext.equalsIgnoreCase("89u") ||
+								ext.equalsIgnoreCase("v2u") ||
+								ext.equalsIgnoreCase("9xu") ||
+								ext.equalsIgnoreCase("tib")
+							) {
+								// copy the selected file into internal storage
+								InputStream is = null;
+								OutputStream os = null;
+								try {
+									// open the input & output streams
+									is = getContentResolver().openInputStream(data.getData());
+									os = getApplicationContext().openFileOutput(filename, 0);
 
-								// copy the streams
-								byte[] buffer = new byte[1024];
-								int length;
-								while ((length = is.read(buffer)) > 0) {
-									os.write(buffer, 0, length);
+									// copy the streams
+									byte[] buffer = new byte[1024];
+									int length;
+									while ((length = is.read(buffer)) > 0) {
+										os.write(buffer, 0, length);
+									}
+
+									// save the location of the internal copy
+									mBrowseText = pathFilename;
+
+								} catch (Exception e) {
+									Log.d("Graph89","Caught exception copying input file to temporary file in app-specific directory: "+e.toString());
+								} finally {
+									try {
+										is.close();
+										os.close();
+									} catch (Exception e) {
+										Log.d("Graph89","Caught exception closing source file or temporary file: "+e.toString());
+									}
 								}
 
-								// save the location of the internal copy
-								mBrowseText = pathFilename;
-
-							} catch (Exception e) {
-								Log.d("Graph89","Caught exception copying input file to temporary file in app-specific directory: "+e.toString());
-							} finally {
-								try {
-									is.close();
-									os.close();
-								} catch (Exception e) {
-									Log.d("Graph89","Caught exception closing source file or temporary file: "+e.toString());
-                                }
-                            }
-
+							} else {
+								// bad file extension
+								String errorMsg = "Bad file extension: '"+ext+"'. Extension must be one of: .rom, .8Xu, .89u, .v2u, .9xu, .tib";
+								Log.d("Graph89", errorMsg);
+								Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show();
+							}
 						} else {
+							// data is null
 							Log.d("Graph89","File URI not found");
 						}
 					} else {
+						// result code is RESULT_OK
 						Log.d("Graph89", "User cancelled file browsing");
 					}
 					break;
